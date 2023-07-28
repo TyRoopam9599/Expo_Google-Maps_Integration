@@ -1,11 +1,50 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Platform, View, StyleSheet, Text } from 'react-native';
+import { isDevice } from 'expo-device';
+import * as Location from 'expo-location';
+import MapView, { Marker } from 'react-native-maps';
 
-export default function App() {
+const App = () => {
+  
+  const [coordinates, setCoordinates] = useState({ lat: null, lon: null })
+
+  useEffect(() => {
+    (async () => {
+      if (Platform.OS === 'android' && !isDevice) {
+        return;
+      }
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        return;
+      }
+      const userlocation = await Location.getCurrentPositionAsync({});
+
+      setCoordinates({ lat: userlocation.coords.latitude, lon: userlocation.coords.longitude })
+    })();
+  }, [coordinates.lat]);
+
   return (
     <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
+      {
+        coordinates.lat != null
+          ? <MapView style={styles.map} initialRegion={{
+            latitude: coordinates.lat,
+            longitude: coordinates.lon,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}>
+            <Marker
+            coordinate={{
+              latitude: coordinates.lat,
+              longitude: coordinates.lon,
+            }}
+            title="User Location"
+            description="This is the user's location marker."
+          />
+          </MapView> 
+          :
+           <MapView style={styles.map} />
+      }
     </View>
   );
 }
@@ -13,8 +52,11 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+  },
+  map: {
+    width: '100%',
+    height: '100%',
   },
 });
+
+export default App ;
